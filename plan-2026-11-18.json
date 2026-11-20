@@ -1,0 +1,55 @@
+{
+ "days": [
+  "Schupfnudel-Pfanne mit Kassler (dazu Sauerkraut oder Salat)",
+  "Würstchengulasch mit Nudeln (viel Paprika), dazu Rohkost",
+  "Spinat mit Kartoffeln und Ei",
+  "Asia Chicken mit Reis (Champignons, Karotten, Lauchzwiebeln)",
+  "Schweinekrustenbraten mit Semmelknödeln und Rotkohl",
+  "Spaghetti Bolognese mit Salat",
+  "Rote-Linsen-Hokkaido-Suppe mit Brötchen und Rohkostteller"
+ ],
+ "mins": [
+  25,
+  30,
+  30,
+  30,
+  120,
+  40,
+  35
+ ],
+ "offers": "Edeka Frische-Center Höchner, gültig 16.–21.11.2026\nFleisch: Hähnchenbrustfilet 0,99 €/100 g; Putenoberkeule 0,99 €/100 g; Schweinesaft-/Krustenbraten (Schulter) 0,69 €/100 g; Schweineschäufele 0,59 €/100 g; Gulasch gemischt 0,99 €/100 g (App); Hackfleisch gemischt 800 g 6,99 €; Fleischkäse zum Selberbacken 0,79 €/100 g; Grillbratwurst 500 g 4,79 €; Wiener Würstchen 0,99 €/100 g; Rinderbrust 1,59 €/100 g; Junge Pute TK 4,99 €/kg\nFisch: Schellfischfilet 2,49 €/100 g; Dorade 1,59 €/100 g; Frosta Fischstäbchen 2,99 € (App)\nGemüse: Hokkaido-Kürbis (regional) 0,99 €/kg; Fränkische Bio-Kartoffeln fest 1,5 kg 1,99 €; Salatgurke 0,49 € (App); Spitzpaprika rot 500 g 1,49 €; Pflaumentomaten 500 g 1,69 €; Frosta Gemüse-Pfanne 1,99 €; Bio-TK-Gemüse −15 %\nSonstiges: Barilla Pasta 500 g 0,99 €; Barilla Pesto 1,69 € (App); Barilla Pastasauce 1,69 € (App); Reibekäse 250 g 1,29 €; Schmand 1,11 €; Cremefine 0,99 €; Grana Padano 150 g 3,49 €; Mutti Tomaten (Aktion)",
+ "recipes": [
+  null,
+  null,
+  null,
+  {
+   "ingredients": [
+    "4 Hühnerbrustfilets",
+    "1 kleine Packung Champignons",
+    "4 Lauchzwiebeln",
+    "2 Karotten",
+    "12 EL neutrales Öl",
+    "6 EL geröstetes Sesamöl",
+    "12 EL Sojasoße",
+    "2 volle TL geräuchertes Paprikapulver",
+    "6 TL Speisestärke",
+    "6 TL Süße (Dattelsirup, Agavensirup oder Zucker)",
+    "2 EL Sesam",
+    "Reis zum Servieren (ca. 350 g)"
+   ],
+   "steps": [
+    "Den großen Ofenzauberer (Steinblech) oder ein großes Blech auf 230 °C vorheizen.",
+    "Hühnerbrustfilets, Champignons und Lauchzwiebeln in Stücke schneiden, die Karotten in dünne Stifte.",
+    "Alle Zutaten für die Soße (Öl, Sesamöl, Sojasoße, Paprikapulver, Speisestärke, Süße) verrühren.",
+    "Das heiße Blech aus dem Ofen nehmen, Hühnerfleisch daraufgeben, das Gemüse dazu und die Soße darübergießen.",
+    "Im Ofen 10 Minuten garen, in der Zwischenzeit den Reis kochen.",
+    "Mit Sesam bestreuen und mit dem Reis servieren."
+   ],
+   "tip": "Wer es milder mag, ersetzt die Hälfte von Öl und Sojasoße durch Reiswein oder Apfelsaft. Das Rezept ist für 4 Personen, bei 5 Personen etwa ein Viertel mehr nehmen.",
+   "src": "Aus eurer Rezeptsammlung (Asia Chicken)"
+  },
+  null,
+  null,
+  null
+ ]
+}
