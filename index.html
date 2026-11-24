@@ -73,7 +73,7 @@ h2{margin:2px 0 0;font-size:1.3rem}
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 /* ===== Einstellungen ===== */
-const PLANER_PIN='2247'; // BITTE ÄNDERN: Wer die PIN kennt, darf den Speiseplan bearbeiten
+const PLANER_PIN='1234'; // BITTE ÄNDERN: Wer die PIN kennt, darf den Speiseplan bearbeiten
 const FIREBASE_CONFIG={
   apiKey:"AIzaSyCVsO83q-uUbBnWvUWRgm36m9b1Fjgx1Rk",
   authDomain:"familienessen.firebaseapp.com",
@@ -87,6 +87,8 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const fsdb=firebase.firestore();
 try{fsdb.enablePersistence({synchronizeTabs:true}).catch(function(){})}catch(e){}
 const authP=firebase.auth().signInAnonymously().catch(function(e){console.error(e);return null});
+let myUid='';
+authP.then(function(c){try{if(c&&c.user){myUid=c.user.uid;render()}}catch(e){}});
 const assetsShim={
   upload:function(blob){return new Promise(function(res,rej){
     const r=new FileReader();
@@ -162,7 +164,7 @@ function buildPrompt(){
     const HISTORY='Spaghetti Carbonara, Fisch mit Kartoffelsalat, Putenschnitzel mit breiten Nudeln, Currywurst mit Pommes, Frikadellen mit Karottengemüse, Tortellini in Schinken-Sahne-Soße, Lauch-Hackfleisch-Suppe, Rouladen mit Semmelknödeln, selbstgemachte Chicken Nuggets, Leberkäse mit Bratkartoffeln, Lende mit Klößen und Blaukraut, Lasagne mit Salat, Kürbiscremesuppe, Burger, Würstchengulasch, Gnocchi-Auflauf, Tomatensuppe mit Reis, Chinesische Nudeln, Rösti-Blech Jäger Art, Gyrosgeschnetzeltes mit Ebly, Käsespätzle mit Salat, Sandwiches, Bratwürste mit Pommes und Salat, Asia-Nudeln, Tortellini-Blech, Hähnchen mit breiten Nudeln, Hackbraten mit Kartoffeln und Karotten, Wurstnudel, Cordon Bleu mit Pommes und Salat, Schupfnudel-Pfanne mit Kassler, Spinat mit Kartoffeln und Ei, Spaghetti Bolognese mit Salat';
     const RECIPES='Enchiladas (60 Min.), Feierabendblech mit Schweinefilet und Spätzle (35), Asia Chicken mit Reis (30), Pesto-Hähnchen-Blech mit Kartoffeln (65), Spaghetti Carbonara aus dem Ofen (70), Kartoffelpfanne mit Hähnchen und Ei (45), Rösti-Blech Jäger Art (60), Gyros-Rösti-Blech (50), Tortellini-Blech (45), Tortellini-Topf (30), Lasagnetopf (50)';
     const wl=wishesFor(iso(monday(off))).map(w=>w.name+': '+w.dish+(w.note?' ('+w.note+')':'')).join('; ')||'keine';
-    const p='Plane 7 Abendessen für die Woche '+fmt(monday(off))+' – '+fmt(addDays(monday(off),6))+' (Mittwoch bis Dienstag) für eine Familie: 2 Erwachsene, 3 Kinder (9, 12 und 14 Jahre). Mischkost, 2 bis 3 Tage pro Woche vegetarisch (ganz ohne Fleisch und Fisch), kaum Fisch und Rind, nie Lamm, Hase oder ähnliches Wild. In JEDEM Essen muss Gemüse oder Salat vorkommen. Einkauf ist Dienstagabend, also soll am Dienstag (letzter Tag) ein Gericht aus Vorräten oder mit haltbarem Gemüse stehen. Saison beachten (Monat: '+month+'). Alltagstauglich, kinderfreundlich, abwechslungsreich, Achte streng auf Abwechslung: Die Beilage (Kartoffeln, Nudeln, Reis, Brot oder Knödel, Getreide) darf nie an zwei Tagen in Folge gleich sein, auch Kartoffelprodukte wie Schupfnudeln, Püree, Pommes, Rösti, Gnocchi und Kartoffelsuppe zählen als Kartoffeln. Die Proteinquelle (Schwein, Geflügel, Hack, Ei oder Käse, Hülsenfrüchte) darf nicht an zwei Tagen in Folge gleich sein. Wechsle außerdem Gemüsesorten, Zubereitungsart (Pfanne, Ofen, Suppe, Auflauf) und Küche (deutsch, italienisch, asiatisch, mexikanisch) ab, und verteile die vegetarischen Tage so, dass sie nicht aufeinander folgen. Bewertungen der Familie (anonym, 1 bis 5 Sterne): Gut angekommen: '+liked+'. Schlecht angekommen (meiden): '+bad+'. Kommentare: '+cm+'. Lieblingsessen der Familienmitglieder: '+fl+'. Plane jede Woche mindestens zwei Lieblingsessen ein (Name der Person in Klammern am Ende) und verteile sie gerecht: Wer in den letzten Wochen kein Lieblingsessen bekam, ist zuerst dran. Gut bewertete Gerichte dürfen nach einigen Wochen wiederkehren, schlecht bewertete nicht. Angebote beim Einkauf (Edeka Frische-Center Höchner, Einkauf dienstags): '+((doff||(plans[iso(monday(off))]||{}).offers||'').trim()||'keine bekannt')+'. Plane Fleisch und Gemüse bevorzugt passend zu diesen Angeboten. Zuletzt gegessen (nicht wiederholen, aber als Geschmacksprofil nutzen): '+HISTORY+'; zuletzt in dieser App geplant: '+prev+'. Rezeptsammlung der Familie (höchstens ein bis zwei Tage pro Woche daraus planen, alle anderen Tage mit neuen Ideen im Stil der Familie (deftige Alltagsküche, Nudeln, Aufäufe, Pfannen, Suppen, Ofengerichte); Zubereitungszeit in Klammern; Rinderhack durch Schweine- oder Putenhack ersetzen; Gerichte ohne Gemüse um Salat oder Rohkost ergänzen): '+RECIPES+'. Wunschgerichte der Familie für diese Woche (jeder Wunsch muss an einem Tag eingeplant werden, passend zu Essenszeit und Zubereitungszeit, mit dem Namen der wünschenden Person in Klammern am Ende; ergänze bei Bedarf eine Gemüse- oder Salatbeilage): '+wl+'. Essenszeit und maximale Zubereitungszeit am Tag selbst: '+SLOT.map((x,i)=>DAYS[i]+' '+x.t+' Uhr, '+x.c+' kocht, max. '+x.max+' Min.'+(x.n?' ('+x.n+')':'')).join('; ')+'. Das Gericht muss in dieser Zeit fertig werden (Vorbereiten am Vormittag ist möglich, aber nicht nötig). Antworte ausschließlich mit einem JSON-Objekt der Form {"days":[7 Strings],"mins":[7 Zahlen],"recipes":[7 Objekte]}. days enthält pro Tag Gericht mit Gemüse- oder Salatbeilage (höchstens 80 Zeichen), mins die Zubereitungszeit in Minuten. Jedes Rezept hat die Form {"ingredients":["Menge Zutat"],"steps":["Schritt"],"tip":"kurzer Tipp"} mit Menge für 5 Personen, 5 bis 15 Zutaten und 4 bis 8 Schritten (je höchstens 220 Zeichen), metrische Mengen. Bei Gerichten aus der Rezeptsammlung der Familie nutze deren Originalrezept, falls bekannt.';
+    const p='Plane 7 Abendessen für die Woche '+fmt(monday(off))+' – '+fmt(addDays(monday(off),6))+' (Mittwoch bis Dienstag) für eine Familie: 2 Erwachsene, 3 Kinder (9, 12 und 14 Jahre). Mischkost, 2 bis 3 Tage pro Woche vegetarisch (ganz ohne Fleisch und Fisch), kaum Fisch und Rind, nie Lamm, Hase oder ähnliches Wild. In JEDEM Essen muss Gemüse oder Salat vorkommen. Einkauf ist Dienstagabend, also soll am Dienstag (letzter Tag) ein Gericht aus Vorräten oder mit haltbarem Gemüse stehen. Saison beachten (Monat: '+month+'). Alltagstauglich, kinderfreundlich, abwechslungsreich, Achte streng auf Abwechslung: Die Beilage (Kartoffeln, Nudeln, Reis, Brot oder Knödel, Getreide) darf nie an zwei Tagen in Folge gleich sein, auch Kartoffelprodukte wie Schupfnudeln, Püree, Pommes, Rösti, Gnocchi und Kartoffelsuppe zählen als Kartoffeln. Die Proteinquelle (Schwein, Geflügel, Hack, Ei oder Käse, Hülsenfrüchte) darf nicht an zwei Tagen in Folge gleich sein. Wechsle außerdem Gemüsesorten, Zubereitungsart (Pfanne, Ofen, Suppe, Auflauf) und Küche (deutsch, italienisch, asiatisch, mexikanisch) ab, und verteile die vegetarischen Tage so, dass sie nicht aufeinander folgen. Bewertungen der Familie (anonym, 1 bis 5 Sterne): Gut angekommen: '+liked+'. Schlecht angekommen (meiden): '+bad+'. Kommentare: '+cm+'. Lieblingsessen der Familienmitglieder: '+fl+'. Plane jede Woche mindestens zwei Lieblingsessen ein (Name der Person in Klammern am Ende) und verteile sie gerecht: Wer in den letzten Wochen kein Lieblingsessen bekam, ist zuerst dran. Gut bewertete Gerichte dürfen nach einigen Wochen wiederkehren, schlecht bewertete nicht. Angebote: Rufe vor dem Planen immer die Seite https://www.edeka.de/maerkte/024786/angebote/ auf (Edeka Frische-Center Höchner, Einkauf dienstags), lies die aktuellen Angebote, vor allem beim Fleisch, und plane Fleisch und Gemüse bevorzugt passend dazu. Zuletzt gegessen (nicht wiederholen, aber als Geschmacksprofil nutzen): '+HISTORY+'; zuletzt in dieser App geplant: '+prev+'. Rezeptsammlung der Familie (höchstens ein bis zwei Tage pro Woche daraus planen, alle anderen Tage mit neuen Ideen im Stil der Familie (deftige Alltagsküche, Nudeln, Aufäufe, Pfannen, Suppen, Ofengerichte); Zubereitungszeit in Klammern; Rinderhack durch Schweine- oder Putenhack ersetzen; Gerichte ohne Gemüse um Salat oder Rohkost ergänzen): '+RECIPES+'. Wunschgerichte der Familie für diese Woche (jeder Wunsch muss an einem Tag eingeplant werden, passend zu Essenszeit und Zubereitungszeit, mit dem Namen der wünschenden Person in Klammern am Ende; ergänze bei Bedarf eine Gemüse- oder Salatbeilage): '+wl+'. Essenszeit und maximale Zubereitungszeit am Tag selbst (nur zur Orientierung für den Aufwand: an Tagen mit wenig Zeit einfache und schnelle Gerichte, am Wochenende gern aufwendigere): '+SLOT.map((x,i)=>DAYS[i]+' '+x.t+' Uhr, '+x.c+' kocht, max. '+x.max+' Min.'+(x.n?' ('+x.n+')':'')).join('; ')+'. Das Gericht muss in dieser Zeit fertig werden (Vorbereiten am Vormittag ist möglich, aber nicht nötig). Antworte ausschließlich mit einem JSON-Objekt der Form {"days":[7 Strings],"mins":[7 Zahlen],"offers":"Text","recipes":[7 Objekte]}. days enthält pro Tag Gericht mit Gemüse- oder Salatbeilage (höchstens 80 Zeichen), mins den Aufwand in Minuten, offers die gelesenen Angebote kurz zusammengefasst (Fleisch, Gemüse, Sonstiges mit Preisen und Gültigkeit). Jedes Rezept hat die Form {"ingredients":["Menge Zutat"],"steps":["Schritt"],"tip":"kurzer Tipp"} mit Menge für 5 Personen, 5 bis 15 Zutaten und 4 bis 8 Schritten (je höchstens 220 Zeichen), metrische Mengen. Bei Gerichten aus der Rezeptsammlung der Familie nutze deren Originalrezept, falls bekannt.';
     return p;
 }
 async function copyForClaude(){
@@ -192,7 +194,8 @@ const enc=s=>s.toLowerCase().replace(/[^a-z0-9]/g,c=>'~'+c.charCodeAt(0).toStrin
 const okImg=id=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(String(id||''));
 const wishesFor=wk=>wishes.filter(w=>w.week===wk);
 function wishCard(w,del){
-  return '<div class="card"><div class="row"><b>'+esc(w.name)+' wünscht sich</b>'+(del?'<button class="sec" style="padding:2px 10px" onclick="delWish(\''+esc(w.id)+'\')" aria-label="Wunsch entfernen">✕</button>':'')+'</div><div>'+esc(w.dish)+'</div>'+(w.note?'<small>'+esc(w.note)+'</small>':'')+(okImg(w.img)?'<img class="rimg" src="'+w.img+'" alt="Rezept" onclick="this.classList.toggle(\'big\')">':'')+'</div>';
+  const own=del&&(w.uid?w.uid===myUid:String(w.name||'').toLowerCase()===wname.trim().toLowerCase());
+  return '<div class="card"><div class="row"><b>'+esc(w.name)+' wünscht sich</b>'+(own?'<button class="sec" style="padding:2px 10px" onclick="delWish(\''+esc(w.id)+'\')" aria-label="Wunsch entfernen">✕</button>':'')+'</div><div>'+esc(w.dish)+'</div>'+(w.note?'<small>'+esc(w.note)+'</small>':'')+(okImg(w.img)?'<img class="rimg" src="'+w.img+'" alt="Rezept" onclick="this.classList.toggle(\'big\')">':'')+'</div>';
 }
 function wval(){const b=$('#wsave');if(b)b.disabled=!(wname.trim()&&wdish.trim())||wbusy}
 function pickImg(el){wfile=(el.files&&el.files[0])||null;render()}
@@ -209,13 +212,14 @@ async function saveWish(){
   wbusy=true;render();
   try{
     const wk=iso(monday(1)),nm=wname.trim().slice(0,30),id=wk+'_'+enc(nm),ex=wishes.find(w=>w.id===id);
+    if(ex&&ex.uid&&ex.uid!==myUid){msg='Unter diesem Namen gibt es schon einen Wunsch von einem anderen Gerät. Bitte nutze einen anderen Namen.';wbusy=false;render();return}
     let img=(ex&&okImg(ex.img))?ex.img:'';
     if(wfile){
       const as=await use('assets');
       if(!as)throw new Error('noassets');
       img=(await as.upload(await shrink(wfile))).id;
     }
-    await db.doc('wishes/'+id).set({week:wk,name:nm,dish:wdish.trim().slice(0,80),note:wnote.trim().slice(0,300),img:img});
+    await db.doc('wishes/'+id).set({uid:myUid,week:wk,name:nm,dish:wdish.trim().slice(0,80),note:wnote.trim().slice(0,300),img:img});
     try{localStorage.setItem('wname',nm)}catch(e){}
     wdish='';wnote='';wfile=null;
   }catch(e){msg='Der Wunsch konnte nicht gespeichert werden.'+(e&&e.message=='toobig'?' Das Bild ist zu groß, bitte ein kleineres Foto wählen.':'')}
@@ -223,6 +227,7 @@ async function saveWish(){
 }
 async function delWish(id){
   const w=wishes.find(x=>x.id===id);
+  if(!w||!(w.uid?w.uid===myUid:String(w.name||'').toLowerCase()===wname.trim().toLowerCase()))return;
   try{
     await db.doc('wishes/'+id).delete();
     if(w&&okImg(w.img)){try{const as=await use('assets');if(as)await as.delete(w.img)}catch(e){}}
@@ -277,7 +282,7 @@ function viewRecipe(){
   const w=wishesFor(iso(m)).find(x=>okImg(x.img)&&dish.toLowerCase().indexOf(String(x.dish).toLowerCase())>=0);
   const li=t=>String(t||'').split('\n').filter(Boolean).map(x=>'<li>'+esc(x)+'</li>').join('');
   let h='<div class="sheet"><div class="wrap"><button class="sec" style="padding:6px 14px;margin-bottom:12px" onclick="closeRec()">‹ Zurück</button>';
-  h+='<small class="mut">'+DAYS[i]+' · '+fmt(addDays(m,i))+'</small><h2 style="margin:2px 0 6px">'+esc(dish)+'</h2><small class="mut">Essen '+S.t+' Uhr · '+S.c+' kocht'+(mn?' · Kochstart '+startT(S.t,mn)+' · '+mn+' Min.':'')+'</small>';
+  h+='<small class="mut">'+DAYS[i]+' · '+fmt(addDays(m,i))+'</small><h2 style="margin:2px 0 6px">'+esc(dish)+'</h2>';
   if(w)h+='<img class="rimg big" src="'+w.img+'" alt="Rezeptbild von '+esc(w.name)+'" style="margin:12px 0">';
   if(r){
     if(r.src)h+='<p class="mut" style="margin:10px 0 0"><small>'+esc(r.src)+'</small></p>';
@@ -305,11 +310,10 @@ function viewPlan(){
   let h='<div class="wk"><button onclick="wk(-1)" aria-label="Vorherige Woche">‹</button><div><b>'+(off==1?'Nächste Woche':off==0?'Diese Woche':'Woche')+'</b><br><small>'+fmt(m)+' – '+fmt(addDays(m,6))+'</small></div><button onclick="wk(1)" aria-label="Nächste Woche">›</button></div><small class="mut" style="display:block;text-align:center;margin:-4px 0 10px">Tippe auf ein Gericht für das Rezept</small>';
   h+=DAYS.map((n,i)=>{
     const d=addDays(m,i),v=(editing?draft[i]:days[i])||'',mn=Number(editing?dm[i]:mins[i])||0,S=SLOT[i];
-    const info='<small>Essen '+S.t+' Uhr'+(mn?' · Kochstart '+startT(S.t,mn)+' · '+mn+' Min.':'')+(S.c?' · '+S.c+' kocht':'')+(S.n?' · '+esc(S.n):'')+'</small>'+(mn>S.max?' <small style="color:#c0392b">· länger als die verfügbare Zeit</small>':'');
+    const info='';
     return '<div class="card day'+(iso(d)==ti?' today':'')+'"'+((!editing&&v)?' onclick="openRec('+i+')" style="cursor:pointer"':'')+'><div class="dn"><b>'+n+'</b><small>'+fmt(d)+'</small></div>'+
-      '<div style="flex:1;min-width:0">'+(editing?'<input value="'+esc(v)+'" maxlength="80" placeholder="Abendessen" oninput="draft['+i+']=this.value"><div class="bar" style="align-items:center;margin:6px 0 0"><input type="number" min="0" max="180" style="width:76px" value="'+(dm[i]||'')+'" placeholder="Min." oninput="dm['+i+']=this.value"><small>Min. Zubereitung (max. '+S.max+'), Essen '+S.t+' Uhr</small></div>':'<div class="'+(v?'':'mut')+'">'+(v?esc(v):'noch offen')+'</div>'+(v?info:'<small>Essen '+S.t+' Uhr</small>'))+'</div></div>';
+      '<div style="flex:1;min-width:0">'+(editing?'<input value="'+esc(v)+'" maxlength="80" placeholder="Abendessen" oninput="draft['+i+']=this.value">':'<div class="'+(v?'':'mut')+'">'+(v?esc(v):'noch offen')+'</div>'+info)+'</div></div>';
   }).join('');
-  if(canEdit&&editing)h+='<textarea placeholder="Wochenangebote einfügen (z. B. von Edeka Frische-Center Höchner)" oninput="doff=this.value" style="min-height:110px;margin:0 0 8px">'+esc(doff)+'</textarea>';
   if(canEdit)h+=editing?'<button class="sec" style="width:100%;margin-bottom:8px" '+'onclick="copyForClaude()">Daten für Claude kopieren</button><textarea placeholder="Plan von Claude hier einfügen" oninput="imp=this.value" style="min-height:70px;margin:0 0 8px">'+esc(imp)+'</textarea><button class="sec" style="width:100%;margin-bottom:8px" onclick="importPlan()">Plan übernehmen'+'</button><div class="bar"><button class="sec" onclick="editing=false;render()">Abbrechen</button><button class="pri" onclick="save()">Speichern</button></div>':'<button class="sec" style="width:100%" onclick="edit()">Speiseplan bearbeiten</button>';
   const ws=wishesFor(iso(m));
   if(ws.length)h+='<h3 class="h3">Wunschessen für diese Woche</h3>'+ws.map(w=>wishCard(w,false)).join('');
