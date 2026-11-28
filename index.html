@@ -21,7 +21,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px 0}
 h1{font-size:1.2rem;margin:0 0 6px}
 nav{display:flex;max-width:560px;margin:0 auto}
-nav button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:10px 2px;font:inherit;font-size:.9rem;color:var(--mut);cursor:pointer}
+nav button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:10px 2px;font:inherit;font-size:.82rem;color:var(--mut);cursor:pointer}
 nav button.on{color:var(--acc);border-color:var(--acc);font-weight:600}
 main{max-width:560px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:0 0 10px}
@@ -48,6 +48,10 @@ textarea{min-height:90px;margin:10px 0;resize:vertical}
 .cm{margin:8px 0 0;padding-left:10px;border-left:3px solid var(--line)}
 h2{margin:2px 0 0;font-size:1.3rem}
 .h3{font-size:1rem;margin:18px 0 8px}
+.chk{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.chk:last-child{border-bottom:0}
+.chk input{width:24px;height:24px;padding:0;flex:none;accent-color:var(--acc)}
+.chk.done span{text-decoration:line-through;color:var(--mut)}
 .sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 24px)}
 .wrap{max-width:560px;margin:0 auto}
 .rl{margin:0;padding-left:20px}
@@ -63,8 +67,8 @@ h2{margin:2px 0 0;font-size:1.3rem}
   <nav>
     <button data-t="plan" onclick="go('plan')">Woche</button>
     <button data-t="wish" onclick="go('wish')">Wunsch</button>
-    <button data-t="rate" onclick="go('rate')">Bewerten</button>
-    <button data-t="stats" onclick="go('stats')">Auswertung</button>
+    <button data-t="rate" onclick="go('rate')">Bewertung</button>
+    <button data-t="shop" onclick="go('shop')">Einkaufsliste</button>
   </nav>
 </header>
 <main id="app"></main>
@@ -134,8 +138,8 @@ const SLOT=[
 ];
 const startT=(t,m)=>{const p=t.split(':').map(Number),x=p[0]*60+p[1]-m;return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
 
-let tab='plan',off=1,plans={},ratings=[],db=null,canEdit=false,ready=false,tabSet=false;
-let editing=false,draft=[],stars=0,comment='',done=false,msg='',busy=false,dm=[],wishes=[],wdish='',wnote='',wfile=null,wbusy=false,wname='',doff='',favs=[],ftext='',fdirty=false,rid=-1,recs=[],rbusy=false,rmsg='',imp='';
+let tab='plan',off=0,plans={},ratings=[],db=null,canEdit=false,ready=false,tabSet=false;
+let editing=false,draft=[],stars=0,comment='',done=false,msg='',busy=false,dm=[],wishes=[],wdish='',wnote='',wfile=null,wbusy=false,wname='',doff='',favs=[],ftext='',fdirty=false,rid=-1,recs=[],rbusy=false,rmsg='',imp='',rs={},rc={},soff=(new Date().getDay()==2?1:0);
 try{wname=localStorage.getItem('wname')||''}catch(e){}
 const use=n=>window.claude?window.claude.use(n):Promise.resolve(null);
 
@@ -164,7 +168,7 @@ function buildPrompt(){
     const HISTORY='Spaghetti Carbonara, Fisch mit Kartoffelsalat, Putenschnitzel mit breiten Nudeln, Currywurst mit Pommes, Frikadellen mit Karottengemüse, Tortellini in Schinken-Sahne-Soße, Lauch-Hackfleisch-Suppe, Rouladen mit Semmelknödeln, selbstgemachte Chicken Nuggets, Leberkäse mit Bratkartoffeln, Lende mit Klößen und Blaukraut, Lasagne mit Salat, Kürbiscremesuppe, Burger, Würstchengulasch, Gnocchi-Auflauf, Tomatensuppe mit Reis, Chinesische Nudeln, Rösti-Blech Jäger Art, Gyrosgeschnetzeltes mit Ebly, Käsespätzle mit Salat, Sandwiches, Bratwürste mit Pommes und Salat, Asia-Nudeln, Tortellini-Blech, Hähnchen mit breiten Nudeln, Hackbraten mit Kartoffeln und Karotten, Wurstnudel, Cordon Bleu mit Pommes und Salat, Schupfnudel-Pfanne mit Kassler, Spinat mit Kartoffeln und Ei, Spaghetti Bolognese mit Salat';
     const RECIPES='Enchiladas (60 Min.), Feierabendblech mit Schweinefilet und Spätzle (35), Asia Chicken mit Reis (30), Pesto-Hähnchen-Blech mit Kartoffeln (65), Spaghetti Carbonara aus dem Ofen (70), Kartoffelpfanne mit Hähnchen und Ei (45), Rösti-Blech Jäger Art (60), Gyros-Rösti-Blech (50), Tortellini-Blech (45), Tortellini-Topf (30), Lasagnetopf (50)';
     const wl=wishesFor(iso(monday(off))).map(w=>w.name+': '+w.dish+(w.note?' ('+w.note+')':'')).join('; ')||'keine';
-    const p='Plane 7 Abendessen für die Woche '+fmt(monday(off))+' – '+fmt(addDays(monday(off),6))+' (Mittwoch bis Dienstag) für eine Familie: 2 Erwachsene, 3 Kinder (9, 12 und 14 Jahre). Mischkost, 2 bis 3 Tage pro Woche vegetarisch (ganz ohne Fleisch und Fisch), kaum Fisch und Rind, nie Lamm, Hase oder ähnliches Wild. In JEDEM Essen muss Gemüse oder Salat vorkommen. Einkauf ist Dienstagabend, also soll am Dienstag (letzter Tag) ein Gericht aus Vorräten oder mit haltbarem Gemüse stehen. Saison beachten (Monat: '+month+'). Alltagstauglich, kinderfreundlich, abwechslungsreich, Achte streng auf Abwechslung: Die Beilage (Kartoffeln, Nudeln, Reis, Brot oder Knödel, Getreide) darf nie an zwei Tagen in Folge gleich sein, auch Kartoffelprodukte wie Schupfnudeln, Püree, Pommes, Rösti, Gnocchi und Kartoffelsuppe zählen als Kartoffeln. Die Proteinquelle (Schwein, Geflügel, Hack, Ei oder Käse, Hülsenfrüchte) darf nicht an zwei Tagen in Folge gleich sein. Wechsle außerdem Gemüsesorten, Zubereitungsart (Pfanne, Ofen, Suppe, Auflauf) und Küche (deutsch, italienisch, asiatisch, mexikanisch) ab, und verteile die vegetarischen Tage so, dass sie nicht aufeinander folgen. Bewertungen der Familie (anonym, 1 bis 5 Sterne): Gut angekommen: '+liked+'. Schlecht angekommen (meiden): '+bad+'. Kommentare: '+cm+'. Lieblingsessen der Familienmitglieder: '+fl+'. Plane jede Woche mindestens zwei Lieblingsessen ein (Name der Person in Klammern am Ende) und verteile sie gerecht: Wer in den letzten Wochen kein Lieblingsessen bekam, ist zuerst dran. Gut bewertete Gerichte dürfen nach einigen Wochen wiederkehren, schlecht bewertete nicht. Angebote: Rufe vor dem Planen immer die Seite https://www.edeka.de/maerkte/024786/angebote/ auf (Edeka Frische-Center Höchner, Einkauf dienstags), lies die aktuellen Angebote, vor allem beim Fleisch, und plane Fleisch und Gemüse bevorzugt passend dazu. Zuletzt gegessen (nicht wiederholen, aber als Geschmacksprofil nutzen): '+HISTORY+'; zuletzt in dieser App geplant: '+prev+'. Rezeptsammlung der Familie (höchstens ein bis zwei Tage pro Woche daraus planen, alle anderen Tage mit neuen Ideen im Stil der Familie (deftige Alltagsküche, Nudeln, Aufäufe, Pfannen, Suppen, Ofengerichte); Zubereitungszeit in Klammern; Rinderhack durch Schweine- oder Putenhack ersetzen; Gerichte ohne Gemüse um Salat oder Rohkost ergänzen): '+RECIPES+'. Wunschgerichte der Familie für diese Woche (jeder Wunsch muss an einem Tag eingeplant werden, passend zu Essenszeit und Zubereitungszeit, mit dem Namen der wünschenden Person in Klammern am Ende; ergänze bei Bedarf eine Gemüse- oder Salatbeilage): '+wl+'. Essenszeit und maximale Zubereitungszeit am Tag selbst (nur zur Orientierung für den Aufwand: an Tagen mit wenig Zeit einfache und schnelle Gerichte, am Wochenende gern aufwendigere): '+SLOT.map((x,i)=>DAYS[i]+' '+x.t+' Uhr, '+x.c+' kocht, max. '+x.max+' Min.'+(x.n?' ('+x.n+')':'')).join('; ')+'. Das Gericht muss in dieser Zeit fertig werden (Vorbereiten am Vormittag ist möglich, aber nicht nötig). Antworte ausschließlich mit einem JSON-Objekt der Form {"days":[7 Strings],"mins":[7 Zahlen],"offers":"Text","recipes":[7 Objekte]}. days enthält pro Tag Gericht mit Gemüse- oder Salatbeilage (höchstens 80 Zeichen), mins den Aufwand in Minuten, offers die gelesenen Angebote kurz zusammengefasst (Fleisch, Gemüse, Sonstiges mit Preisen und Gültigkeit). Jedes Rezept hat die Form {"ingredients":["Menge Zutat"],"steps":["Schritt"],"tip":"kurzer Tipp"} mit Menge für 5 Personen, 5 bis 15 Zutaten und 4 bis 8 Schritten (je höchstens 220 Zeichen), metrische Mengen. Bei Gerichten aus der Rezeptsammlung der Familie nutze deren Originalrezept, falls bekannt.';
+    const p='Plane 7 Abendessen für die Woche '+fmt(monday(off))+' – '+fmt(addDays(monday(off),6))+' (Mittwoch bis Dienstag) für eine Familie: 2 Erwachsene, 3 Kinder (9, 12 und 14 Jahre). Mischkost, 2 bis 3 Tage pro Woche vegetarisch (ganz ohne Fleisch und Fisch), kaum Fisch und Rind, nie Lamm, Hase oder ähnliches Wild. In JEDEM Essen muss Gemüse oder Salat vorkommen. Einkauf ist Dienstagabend, also soll am Dienstag (letzter Tag) ein Gericht aus Vorräten oder mit haltbarem Gemüse stehen. Saison beachten (Monat: '+month+'). Alltagstauglich, kinderfreundlich, abwechslungsreich, Achte streng auf Abwechslung: Die Beilage (Kartoffeln, Nudeln, Reis, Brot oder Knödel, Getreide) darf nie an zwei Tagen in Folge gleich sein, auch Kartoffelprodukte wie Schupfnudeln, Püree, Pommes, Rösti, Gnocchi und Kartoffelsuppe zählen als Kartoffeln. Die Proteinquelle (Schwein, Geflügel, Hack, Ei oder Käse, Hülsenfrüchte) darf nicht an zwei Tagen in Folge gleich sein. Wechsle außerdem Gemüsesorten, Zubereitungsart (Pfanne, Ofen, Suppe, Auflauf) und Küche (deutsch, italienisch, asiatisch, mexikanisch) ab, und verteile die vegetarischen Tage so, dass sie nicht aufeinander folgen. Bewertungen der Familie (anonym, 1 bis 5 Sterne): Gut angekommen: '+liked+'. Schlecht angekommen (meiden): '+bad+'. Kommentare: '+cm+'. Lieblingsessen der Familienmitglieder: '+fl+'. Plane jede Woche mindestens zwei Lieblingsessen ein (Name der Person in Klammern am Ende) und verteile sie gerecht: Wer in den letzten Wochen kein Lieblingsessen bekam, ist zuerst dran. Gut bewertete Gerichte dürfen nach einigen Wochen wiederkehren, schlecht bewertete nicht. Angebote: Rufe vor dem Planen immer die Seite https://www.edeka.de/maerkte/024786/angebote/ auf (Edeka Frische-Center Höchner, Einkauf dienstags), lies die aktuellen Angebote, vor allem beim Fleisch, und plane Fleisch und Gemüse bevorzugt passend dazu. Zuletzt gegessen (nicht wiederholen, aber als Geschmacksprofil nutzen): '+HISTORY+'; zuletzt in dieser App geplant: '+prev+'. Rezeptsammlung der Familie (höchstens ein bis zwei Tage pro Woche daraus planen, alle anderen Tage mit neuen Ideen im Stil der Familie (deftige Alltagsküche, Nudeln, Aufäufe, Pfannen, Suppen, Ofengerichte); Zubereitungszeit in Klammern; Rinderhack durch Schweine- oder Putenhack ersetzen; Gerichte ohne Gemüse um Salat oder Rohkost ergänzen): '+RECIPES+'. Wunschgerichte der Familie für diese Woche (jeder Wunsch muss an einem Tag eingeplant werden, passend zu Essenszeit und Zubereitungszeit, mit dem Namen der wünschenden Person in Klammern am Ende; ergänze bei Bedarf eine Gemüse- oder Salatbeilage): '+wl+'. Essenszeit und maximale Zubereitungszeit am Tag selbst (nur zur Orientierung für den Aufwand: an Tagen mit wenig Zeit einfache und schnelle Gerichte, am Wochenende gern aufwendigere): '+SLOT.map((x,i)=>DAYS[i]+' '+x.t+' Uhr, '+x.c+' kocht, max. '+x.max+' Min.'+(x.n?' ('+x.n+')':'')).join('; ')+'. Das Gericht muss in dieser Zeit fertig werden (Vorbereiten am Vormittag ist möglich, aber nicht nötig). Antworte ausschließlich mit einem JSON-Objekt der Form {"days":[7 Strings],"mins":[7 Zahlen],"offers":"Text","recipes":[7 Objekte]}. days enthält pro Tag Gericht mit Gemüse- oder Salatbeilage (höchstens 80 Zeichen), mins den Aufwand in Minuten, offers die gelesenen Angebote kurz zusammengefasst (Fleisch, Gemüse, Sonstiges mit Preisen und Gültigkeit). Jedes Rezept hat die Form {"ingredients":[{"item":"Zutat","amount":500,"unit":"g"}],"steps":["Schritt"],"tip":"kurzer Tipp"}. Menge für 5 Personen, 5 bis 15 Zutaten, 4 bis 8 Schritte (je höchstens 220 Zeichen). Für die Einkaufsliste gilt: unit nur aus g, ml, EL, TL, Prise, Bund, Dose, Packung, Stück (Stück für Gezähltes wie Zwiebeln oder Eier); amount ist eine Zahl, bei Zutaten ohne Menge (z. B. Salz, Pfeffer) amount weglassen; item immer in der Einzahl und über alle Rezepte der Woche exakt gleich geschrieben (z. B. immer Zwiebel, nie Zwiebeln), damit gleiche Zutaten addiert werden können. Bei Gerichten aus der Rezeptsammlung der Familie nutze deren Originalrezept, falls bekannt.';
     return p;
 }
 async function copyForClaude(){
@@ -183,7 +187,9 @@ async function importPlan(){
     (o.recipes||[]).slice(0,7).forEach((r,k)=>{
       if(!r)return;
       const L=x=>Array.isArray(x)?x.slice(0,20).map(y=>String(y).slice(0,300)).join('\n'):String(x||'');
-      bt.set(db.doc('recipes/'+wk+'_'+k),{dish:days[k],ing:L(r.ingredients||r.ing),steps:L(r.steps),tip:String(r.tip||'').slice(0,300),src:String(r.src||'Von Claude erstellt').slice(0,80)});
+      const raw=r.ingredients||r.ing,objs=Array.isArray(raw)&&raw.length&&typeof raw[0]==='object';
+      const ingj=objs?raw.slice(0,25).map(o=>({item:String(o.item||'').slice(0,60),amount:(o.amount===undefined||o.amount===null||o.amount==='')?null:(Number(o.amount)||null),unit:String(o.unit||'').slice(0,12)})).filter(o=>o.item):null;
+      bt.set(db.doc('recipes/'+wk+'_'+k),{dish:days[k],ing:ingj?ingj.map(ingLine).join('\n'):L(raw),ingj:ingj||[],steps:L(r.steps),tip:String(r.tip||'').slice(0,300),src:String(r.src||'Von Claude erstellt').slice(0,80)});
     });
     await bt.commit();
     editing=false;imp='';
@@ -281,8 +287,8 @@ function viewRecipe(){
   const i=rid,dish=dishOf(i),r=recFor(i),S=SLOT[i],m=monday(off),mn=Number(((plans[iso(m)]||{}).mins||[])[i])||0;
   const w=wishesFor(iso(m)).find(x=>okImg(x.img)&&dish.toLowerCase().indexOf(String(x.dish).toLowerCase())>=0);
   const li=t=>String(t||'').split('\n').filter(Boolean).map(x=>'<li>'+esc(x)+'</li>').join('');
-  let h='<div class="sheet"><div class="wrap"><button class="sec" style="padding:6px 14px;margin-bottom:12px" onclick="closeRec()">‹ Zurück</button>';
-  h+='<small class="mut">'+DAYS[i]+' · '+fmt(addDays(m,i))+'</small><h2 style="margin:2px 0 6px">'+esc(dish)+'</h2>';
+  let h='<div class="sheet"><div class="wrap"><div class="row" style="align-items:center;margin-bottom:12px"><button class="sec" style="padding:6px 14px" onclick="closeRec()">‹ Zurück</button>';
+  h+='<small class="mut" style="text-align:right">'+DAYS[i]+' · '+fmt(addDays(m,i))+'</small></div><h2 style="margin:2px 0 6px">'+esc(dish)+'</h2>';
   if(w)h+='<img class="rimg big" src="'+w.img+'" alt="Rezeptbild von '+esc(w.name)+'" style="margin:12px 0">';
   if(r){
     if(r.src)h+='<p class="mut" style="margin:10px 0 0"><small>'+esc(r.src)+'</small></p>';
@@ -293,17 +299,19 @@ function viewRecipe(){
   else h+='<div class="card'+' mut'+'" style="margin-top:14px">'+esc(rmsg||'Für dieses Gericht gibt es noch kein Rezept.')+'</div>';
   return h+'</div></div>';
 }
-function setStars(n){stars=n;render()}
-async function send(){
-  if(!db||!stars)return;
+const flagFor=d=>'rated:'+d;
+function setStars(i,n){rs[i]=n;render()}
+async function send(i){
+  const w0=monday(0),d=iso(addDays(w0,i)),dish=((plans[iso(w0)]||{}).days||[])[i];
+  if(!db||!rs[i]||!dish)return;
   try{
-    await db.collection('ratings').add({date:iso(new Date()),dish:today().dish,stars:stars,comment:comment.trim().slice(0,500)});
-    try{localStorage.setItem(flag(),'1')}catch(e){}
-    done=true;stars=0;comment='';
+    await db.collection('ratings').add({date:d,dish:dish,stars:rs[i],comment:String(rc[i]||'').trim().slice(0,500)});
+    try{localStorage.setItem(flagFor(d),'1')}catch(e){}
+    delete rs[i];delete rc[i];
   }catch(e){msg='Das Abschicken hat nicht geklappt. Bitte versuch es gleich noch einmal.'}
   render();
 }
-function again(){try{localStorage.removeItem(flag())}catch(e){}done=false;render()}
+function again(i){try{localStorage.removeItem(flagFor(iso(addDays(monday(0),i))))}catch(e){}render()}
 
 function viewPlan(){
   const m=monday(off),pl=plans[iso(m)]||{},days=pl.days||[],mins=pl.mins||[],ti=iso(new Date());
@@ -322,31 +330,89 @@ function viewPlan(){
 }
 
 function viewRate(){
-  const t=today();
-  if(!t.dish)return card('Für heute steht kein Abendessen im Plan.'+(canEdit?' Trag es im Tab „Woche“ ein.':''));
-  if(done||rated())return '<div class="card" style="text-align:center"><h2>Danke für deine Bewertung!</h2><p class="mut">Sie wurde anonym gespeichert.</p><button class="sec" onclick="again()">Noch jemand bewertet an diesem Gerät</button></div>';
-  let h='<div class="card"><small>Heute, '+DAYS[t.i]+'</small><h2>'+esc(t.dish)+'</h2>';
-  if(new Date().getHours()<18)h+='<p class="mut">Gedacht für den Abend nach dem Essen – du kannst aber schon jetzt bewerten.</p>';
-  h+='<div class="stars">'+[1,2,3,4,5].map(n=>'<button class="st'+(n<=stars?' on':'')+'" onclick="setStars('+n+')" aria-label="'+n+' von 5 Sternen">★</button>').join('')+'</div>';
-  h+='<textarea placeholder="Was war gut, was könnte besser sein? (optional)" oninput="comment=this.value">'+esc(comment)+'</textarea>';
-  h+='<button class="pri" '+(stars?'':'disabled')+' onclick="send()">Anonym abschicken</button><p class="mut" style="margin:10px 0 0"><small>Es wird kein Name und keine Kennung gespeichert.</small></p></div>';
+  const w0=monday(0),days=(plans[iso(w0)]||{}).days||[],t=today(),out=[];
+  for(let i=t.i;i>=0;i--){
+    const dish=days[i];if(!dish)continue;
+    const d=iso(addDays(w0,i)),L=ratings.filter(r=>r.date===d);
+    let done=false;try{done=!!localStorage.getItem(flagFor(d))}catch(e){}
+    let h='<div class="card"><small class="mut">'+(i==t.i?'Heute · ':'')+DAYS[i]+', '+fmt(addDays(w0,i))+'</small><h2>'+esc(dish)+'</h2>';
+    if(L.length){
+      const avg=L.reduce((x,r)=>x+(Number(r.stars)||0),0)/L.length;
+      h+='<div class="row" style="margin:8px 0 4px"><span class="avg">★ '+avg.toFixed(1).replace('.',',')+'</span><small class="mut">'+L.length+(L.length==1?' Bewertung':' Bewertungen')+'</small></div>'+L.filter(r=>r.comment).map(r=>'<p class="cm">„'+esc(r.comment)+'“</p>').join('');
+    }else h+='<p class="mut" style="margin:8px 0 0"><small>Noch keine Bewertungen.</small></p>';
+    if(done)h+='<div style="margin-top:12px"><small>Danke, deine Bewertung ist gespeichert.</small><br><button class="sec" style="padding:4px 12px;font-size:.85rem;margin-top:8px" onclick="again('+i+')">Noch jemand bewertet an diesem Gerät</button></div>';
+    else{
+      h+='<div class="stars">'+[1,2,3,4,5].map(n=>'<button class="st'+(n<=(rs[i]||0)?' on':'')+'" onclick="setStars('+i+','+n+')" aria-label="'+n+' von 5 Sternen">★</button>').join('')+'</div>';
+      h+='<textarea placeholder="Was war gut, was könnte besser sein? (optional)" oninput="rc['+i+']=this.value">'+esc(rc[i]||'')+'</textarea>';
+      h+='<button class="pri" '+(rs[i]?'':'disabled')+' onclick="send('+i+')">Anonym abschicken</button><p class="mut" style="margin:10px 0 0"><small>Es wird kein Name und keine Kennung gespeichert.'+((i==t.i&&new Date().getHours()<18)?' Gedacht für den Abend nach dem Essen, du kannst aber schon jetzt bewerten.':'')+'</small></p>';
+    }
+    out.push(h+'</div>');
+  }
+  return out.length?out.join(''):card('In dieser Woche gibt es noch kein Essen, das bewertet werden kann.'+(canEdit?' Trag den Plan im Tab „Woche“ ein.':''));
+}
+
+/* ===== Einkaufsliste ===== */
+const UNITS={g:'g',kg:'kg',ml:'ml',l:'l',el:'EL',tl:'TL',prise:'Prise',prisen:'Prise',bund:'Bund',dose:'Dose',dosen:'Dose',packung:'Packung',packungen:'Packung',stück:'Stück',stk:'Stück',zehe:'Zehe',zehen:'Zehe',becher:'Becher',glas:'Glas',scheibe:'Scheibe',scheiben:'Scheibe'};
+function parseNum(t){t=String(t).replace(',','.');const f={'½':.5,'¼':.25,'¾':.75};if(f[t]!=null)return f[t];const m=t.match(/^(\d+)\s*\/\s*(\d+)$/);if(m)return m[1]/m[2];const x=parseFloat(t);return isNaN(x)?null:x}
+function parseLine(l){
+  l=String(l).trim();
+  const clean=t=>t.replace(/\s*\(.*?\)\s*/g,' ').trim();
+  const m=l.match(/^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾])(?:\s*[–-]\s*(\d+(?:[.,]\d+)?))?\s+(.*)$/);
+  if(!m)return{item:clean(l),amount:null,unit:''};
+  let a=parseNum(m[1]);if(m[2])a=Math.max(a||0,parseNum(m[2])||0);
+  let rest=m[3],unit='';const w=rest.match(/^([A-Za-zÄÖÜäöüß.]+)\s+(.*)$/);
+  const uk=w?w[1].toLowerCase().replace(/\.$/,''):'';
+  if(w&&UNITS[uk]){unit=UNITS[uk];rest=w[2]}
+  return{item:clean(rest),amount:a,unit:unit};
+}
+function fmtNum(x){return String(Math.round(x*10)/10).replace('.',',')}
+function fmtQty(e){
+  if(e.amount==null||e.amount==='')return '';
+  let a=Number(e.amount),u=e.unit||'';
+  if(u==='g'&&a>=1000){a/=1000;u='kg'}
+  if(u==='ml'&&a>=1000){a/=1000;u='l'}
+  return fmtNum(a)+(u&&u!=='Stück'?' '+u:'')+' ';
+}
+const ingLine=o=>fmtQty(o)+o.item;
+function shopItems(wk){
+  const days=(plans[wk]||{}).days||[],map={},miss=[];
+  days.forEach((dish,i)=>{
+    if(!dish)return;
+    const r=recs.find(x=>x.id===wk+'_'+i&&x.dish===dish);
+    if(!r){miss.push(DAYS[i]);return}
+    const L=(Array.isArray(r.ingj)&&r.ingj.length)?r.ingj:String(r.ing||'').split('\n').filter(Boolean).map(parseLine);
+    L.forEach(o=>{
+      const item=String(o.item||'').trim();if(!item)return;
+      let a=(o.amount==null||o.amount==='')?null:Number(o.amount);if(a!=null&&isNaN(a))a=null;
+      let u=UNITS[String(o.unit||'').toLowerCase()]||String(o.unit||'');
+      if(u==='Stück')u='';
+      if(a!=null&&u==='kg'){a*=1000;u='g'}
+      if(a!=null&&u==='l'){a*=1000;u='ml'}
+      const key=item.toLowerCase()+'|'+u+'|'+(a==null?'n':'a');
+      const e=map[key]||(map[key]={key:key,item:item,unit:u,amount:a==null?null:0});
+      if(a!=null)e.amount+=a;
+    });
+  });
+  return{list:Object.values(map),miss:miss};
+}
+const shopKey=wk=>'shop:'+wk;
+function getChecked(wk){try{return JSON.parse(localStorage.getItem(shopKey(wk))||'[]')}catch(e){return[]}}
+function tick(id,on){const wk=iso(monday(soff)),c=getChecked(wk).filter(x=>x!==id);if(on)c.push(id);try{localStorage.setItem(shopKey(wk),JSON.stringify(c))}catch(e){}render()}
+function shopClear(){try{localStorage.removeItem(shopKey(iso(monday(soff))))}catch(e){}render()}
+function shopWk(n){soff+=n;render()}
+function viewShop(){
+  const m=monday(soff),wk=iso(m),sh=shopItems(wk),ck=getChecked(wk);
+  let h='<div class="wk"><button onclick="shopWk(-1)" aria-label="Vorherige Woche">‹</button><div><b>Einkauf für '+(soff==1?'die nächste Woche':soff==0?'diese Woche':'die Woche')+'</b><br><small>'+fmt(m)+' – '+fmt(addDays(m,6))+'</small></div><button onclick="shopWk(1)" aria-label="Nächste Woche">›</button></div>';
+  if(sh.miss.length)h+='<div class="card"><small class="mut">Für '+sh.miss.join(', ')+' liegt noch kein Rezept vor, die Zutaten dieser Tage fehlen in der Liste.</small></div>';
+  if(!sh.list.length)return h+card('Noch keine Zutaten. Sie erscheinen, sobald der Plan mit Rezepten eingespielt ist.');
+  const rows=sh.list.map(e=>{const id=enc(e.key),on=ck.indexOf(id)>=0;return{on:on,name:e.item,html:'<label class="chk'+(on?' done':'')+'"><input type="checkbox" '+(on?'checked ':'')+'onchange="tick(\''+id+'\',this.checked)"><span>'+esc(fmtQty(e)+e.item)+'</span></label>'}}).sort((x,y)=>(x.on-y.on)||x.name.localeCompare(y.name,'de'));
+  h+='<div class="card" style="padding:4px 16px">'+rows.map(r=>r.html).join('')+'</div>';
+  if(ck.length)h+='<button class="sec" style="width:100%" onclick="shopClear()">Alle Haken entfernen</button>';
   return h;
 }
 
-function viewStats(){
-  const g={};
-  ratings.forEach(r=>{
-    const k=String(r.dish||'').trim().toLowerCase();if(!k)return;
-    const e=g[k]||(g[k]={dish:String(r.dish).trim(),s:[],c:[]});
-    e.s.push(Number(r.stars)||0);if(r.comment)e.c.push(r.comment);
-  });
-  const list=Object.values(g).map(x=>({dish:x.dish,s:x.s,c:x.c,avg:x.s.reduce((a,b)=>a+b,0)/x.s.length})).sort((a,b)=>b.avg-a.avg);
-  if(!list.length)return card('Noch keine Bewertungen. Sobald jemand bewertet hat, siehst du hier, welche Gerichte gut ankommen.');
-  return list.map(x=>'<div class="card"><div class="row"><b>'+esc(x.dish)+'</b><span class="avg">★ '+x.avg.toFixed(1).replace('.',',')+'</span></div><small>'+x.s.length+(x.s.length==1?' Bewertung':' Bewertungen')+'</small>'+x.c.map(c=>'<p class="cm">„'+esc(c)+'“</p>').join('')+'</div>').join('');
-}
-
 function render(){
-  const v=!ready?card('Lade …'):!db?card('Die Verbindung zur Datenbank fehlt. Bitte prüfe das Internet und lade die Seite neu.'):tab=='plan'?viewPlan():tab=='wish'?viewWish():tab=='rate'?viewRate():viewStats();
+  const v=!ready?card('Lade …'):!db?card('Die Verbindung zur Datenbank fehlt. Bitte prüfe das Internet und lade die Seite neu.'):tab=='plan'?viewPlan():tab=='wish'?viewWish():tab=='rate'?viewRate():viewShop();
   $('#app').innerHTML=(msg?'<div class="card'+(/^Kopiert/.test(msg)?'':' err')+'">'+esc(msg)+'</div>':'')+v+(rid>=0?viewRecipe():'');msg='';
   $('#pl').textContent=canEdit?'Planer ✓':'Planer';
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));
@@ -365,7 +431,7 @@ render();
     if(!tabSet){tabSet=true;if(new Date().getHours()>=18&&today().dish&&!rated())tab='rate'}
     render();
   },fail);
-  db.collection('ratings').onSnapshot(s=>{ratings=s.docs.map(d=>d.data());if(ready)render()},()=>{});
+  db.collection('ratings').onSnapshot(s=>{ratings=s.docs.map(d=>d.data());if(ready&&!(tab=='rate'&&(Object.keys(rc).length||Object.keys(rs).length)))render()},()=>{});
   db.collection('wishes').onSnapshot(s=>{wishes=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ready&&!(tab=='wish'&&(wdish||wnote)))render()},()=>{});
   db.collection('favs').onSnapshot(s=>{favs=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ready&&!(tab=='wish'&&(wdish||wnote||fdirty)))render()},()=>{});
   db.collection('recipes').onSnapshot(s=>{recs=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(ready&&!(tab=='wish'&&(wdish||wnote||fdirty)))render()},()=>{});
